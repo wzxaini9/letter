@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta name="viewport" content="width=device-width,initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0,user-scalable=no">
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>亮灯祈福·迎春灯谜</title>
+		<link rel="stylesheet" href="style/style.css" />
+	</head>
+	<body>
+		<div id="show">
+			<img src="image/home.jpg" class="image">
+			<div class="music out"></div>
+			<div id="home" class="page">
+				<div class="scale">
+					<div class="title"></div>
+					<div class="tips"></div>
+					<div class="startbtn"></div>
+				</div>
+			</div>
+		</div>
+        <div id="answer" class="page">
+            <div class="numbox">
+                <div class="num"></div>
+            </div>
+            <img src="image/dt.png" class="qbj">
+            <div class="question in"></div>
+            <div class="answerbox in">
+                <div class="answer answer1" id="1"></div>
+                <div class="answer answer2" id="2"></div>
+                <div class="answer answer3" id="3"></div>
+                <div class="answer answer4" id="4"></div>
+            </div>
+        </div>
+        <div id="rule" class="page">
+            <div class="scale">
+                <div class="box">
+                    <div class="startbtn"></div>
+                </div>
+            </div>
+        </div>
+        <div id="over" class="page">
+            <img src="image/invite.png" class="image">
+            <div class="again"></div>
+            <div class="share"></div>
+        </div>
+        <div id="share" class="page"></div>
+		<script src="script/jquery.min.js"></script>
+		<script type="text/javascript" src="script/ishoock.tools.js"></script>
+		<script>
+			var bgm = new Audio();
+			var result = [];
+			bgm.src = "audio/bgm.mp3";
+			bgm.loop = true;
+			$(function() {
+				$("#home").in();
+				//点击音乐按钮
+				$(".music").on("click", function() {
+					if($(this).hasClass("in")) {
+						$(this).removeIn();
+						$(this).out();
+						bgm.pause();
+					} else {
+						$(this).in();
+						$(this).removeOut();
+						bgm.play();
+					}
+				});
+				//开始游戏按钮
+				$("#home .startbtn").on("click", function() {
+                    $("#show").css("opacity", "0");
+					$("#home").removeIn();
+                    Question();
+                    $("#answer").in();
+                    clearTimeout(timer);
+                    num = 100;
+                    Time();
+				});
+                //规则
+                $("#home .tips").on("click", function() {
+                    $("#rule").in();
+                });
+                //点击规则的空白部分
+                $("#rule").on("click", function() {
+                    if(!$(event.target).hasClass("box")) {
+                        $("#rule").removeIn();
+                    }
+                });
+                //开始游戏按钮
+                $("#rule .startbtn").on("click", function() {
+                    $("#show").css("opacity", "0");
+                    $("#home").removeIn();
+                    Question();
+                    $("#answer").in();
+                    clearTimeout(timer);
+                    num = 100;
+                    Time();
+                });
+
+                $("#over .again").on("click", function() {
+                    $("#over").removeIn();
+                    $("#answer .answer").removeIn();
+                    order = 0;
+                    score = 0;
+                    Question();
+                    $("#answer").in();
+                    clearTimeout(timer);
+                    num = 100;
+                    Time();
+                });
+                $("#over .share").on("click", function() {
+                    $("#share").in();
+                });
+                $("#share").on("click", function() {
+                    $("#share").removeIn();
+                });
+				$("#answer .answer").on("click", function() {
+					if(!$("#answer .answer").hasClass("in")) {
+						$(this).in();
+                        opts =new Object();
+                        opts.id=Data[order].id;
+                        opts.correct = $(this).attr("id");
+                        result[order]=opts;
+						if($(this).attr("data-answer") == "true" && num > 0) {
+							score++;
+							var text1 = '<div class="right"></div>';
+							$(this).append(text1);
+						} else {
+							var text1 = '<div class="wrong"></div>';
+							$(this).append(text1);
+							for(var i = 0; i < $("#answer .answer").length; i++) {
+								if($("#answer .answer").eq(i).attr("data-answer") == "true" && num > 0) {
+									var text1 = '<div class="right"></div>';
+									$("#answer .answer").eq(i).append(text1);
+								}
+							}
+						}
+						Answer();
+					}
+				});
+                $.get('https://flow.wzxaini9.cn/130', function (data) {
+                    console.log($.parseJSON(data));
+                })
+			});
+			var num = 100, //倒数的时间
+				timer, Data, score = 0, //分数
+				order = 0; //第几题
+			function Time() {
+				if(num < 0) {
+					clearTimeout(timer);
+					Answer();
+				} else {
+					$("#answer .num").css("background-position", "50% " + num + "%");
+					num = num - 5;
+					timer = setTimeout(Time, 1000);
+				}
+			}
+
+			function Question() {
+				$.get("http://letter.api.zhongxuanzhuli.com/index/Cattle/round", {
+					rid: 0,
+                    sign: 3
+				}, function(data) {
+					var data = eval('(' + data + ')');
+					if(data.code == 200) {
+						Data = data.data;
+                        $("#answer .question").html(Data[0].topic);
+                        $("#answer .answer1").html("A." + Data[0].option_a);
+						$("#answer .answer2").html("B." + Data[0].option_b);
+						$("#answer .answer3").html("C." + Data[0].option_c);
+						$("#answer .answer4").html("D." + Data[0].option_d);
+						$("#answer .answer" + Data[0].correct).attr("data-answer", true);
+						$("#answer .answer" + Data[0].correct).siblings().attr("data-answer", false);
+					} else {
+						alert(data.data.message);
+                        $("#home").in();
+                        $("#show").css("opacity", "1");
+                        $("#answer").removeIn();
+                        clearTimeout(timer);
+                        num = 100;
+                        Time();
+					}
+				});
+			}
+
+			function Answer() {
+                if(order < 4) {
+                    order++;
+                    setTimeout(function() {
+                        $("#answer .question").removeIn();
+                        $("#answer .answerbox").removeIn();
+                        num = 100;
+                        clearTimeout(timer);
+                        setTimeout(function() {
+                            $("#answer .answer").removeIn();
+                            $("#answer .question").html(Data[order].topic);
+                            $("#answer .answer1").html("A." + Data[order].option_a);
+                            $("#answer .answer2").html("B." + Data[order].option_b);
+                            $("#answer .answer3").html("C." + Data[order].option_c);
+                            $("#answer .answer4").html("D." + Data[order].option_d);
+                            $("#answer .answer" + Data[order].correct).attr("data-answer", true);
+                            $("#answer .answer" + Data[order].correct).siblings().attr("data-answer", false);
+                            $("#answer .question").in();
+                            $("#answer .answerbox").in();
+                            Time();
+                        }, 1000);
+                    }, 1000);
+                }else{
+					num = 100;
+					clearTimeout(timer);
+					setTimeout(function() {
+						$(".page").removeIn();
+						$("#over").in();
+					}, 1000)
+				}
+			}
+        </script>
+	</body>
+</html>
